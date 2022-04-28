@@ -1,0 +1,620 @@
+\documentclass[preprint, 3p,
+authoryear]{elsarticle} %review=doublespace preprint=single 5p=2 column
+%%% Begin My package additions %%%%%%%%%%%%%%%%%%%
+
+\usepackage[hyphens]{url}
+
+  \journal{An awesome journal} % Sets Journal name
+
+\usepackage{lineno} % add
+
+\usepackage{graphicx}
+%%%%%%%%%%%%%%%% end my additions to header
+
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \usepackage{fontspec}
+  \ifxetex
+    \usepackage{xltxtra,xunicode}
+  \fi
+  \defaultfontfeatures{Mapping=tex-text,Scale=MatchLowercase}
+  \newcommand{\euro}{€}
+\fi
+% use microtype if available
+\IfFileExists{microtype.sty}{\usepackage{microtype}}{}
+\usepackage[]{natbib}
+\bibliographystyle{plainnat}
+
+\ifxetex
+  \usepackage[setpagesize=false, % page size defined by xetex
+              unicode=false, % unicode breaks when used with xetex
+              xetex]{hyperref}
+\else
+  \usepackage[unicode=true]{hyperref}
+\fi
+\hypersetup{breaklinks=true,
+            bookmarks=true,
+            pdfauthor={},
+            pdftitle={Construction of an IBD Classifier Using Machine Learning Methods},
+            colorlinks=false,
+            urlcolor=blue,
+            linkcolor=magenta,
+            pdfborder={0 0 0}}
+
+\setcounter{secnumdepth}{5}
+% Pandoc toggle for numbering sections (defaults to be off)
+
+
+% tightlist command for lists without linebreak
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+
+
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage[normalem]{ulem}
+\usepackage{makecell}
+\usepackage{xcolor}
+
+
+
+\begin{document}
+
+
+\begin{frontmatter}
+
+  \title{Construction of an IBD Classifier Using Machine Learning
+Methods}
+    \author[Some Institute of Technology]{Peiyu Zhan}
+  
+      \cortext[cor1]{Corresponding author}
+    \fntext[1]{*Code and data are available at:
+https://github.com/peiyuzhan/sta304-final-paper}
+  
+  \begin{abstract}
+  Inflammatory bowel disease (IBD) is a group of intestinal disorders
+  which can cause chronic and incurable inflammation of the digestive
+  tract \citep{CDC}. Although IBD has no specific biomarker, it has been
+  found that the genetic susceptibility plays a key role in the
+  occurrence of IBD \citep{Loddo}. In this paper we propose to construct
+  an IBD classifier based on a gene expression data set using machine
+  learning methods. Several algorithms in machine learning have shown
+  great success in performing the task of binary classification. The
+  three methods considered in this paper include logistic regression,
+  k-nearest neighbours, and decision tree. However, the small sample
+  size makes it non-trivial to validate each model for choosing the top
+  performer, and the large number of features makes it necessary to find
+  proper regularization approaches. For the first concern, we applied
+  split set approach and run 10 epochs for each model to compare their
+  average performance in different evaluation measures. For the second
+  concern, we implemented ridge regression and least absolute shrinkage
+  and selection operator for the logistic model and pruning method for
+  the decision tree. The results show that logistic regression with
+  LASSO regularization is comparatively the best classifier, hence we
+  trained it using the whole data set as the final classifier that can
+  be used for future applications.
+  \end{abstract}
+    \begin{keyword}
+    KNN \sep LASSO \sep Ridge \sep 
+    Classification Tree
+  \end{keyword}
+  
+ \end{frontmatter}
+
+\hypertarget{introduction}{%
+\section{Introduction}\label{introduction}}
+
+Machine learning is the subject composed of computer science and
+statistics that studies how to make algorithms learn patterns and
+features from big data and improve their performance over time without
+being explicitly programmed to do so \citep{IBM} (IBM Cloud Education).
+Although the origin of machine learning can only date back to 1950s, it
+has become one of the most popular research areas and the driving force
+of many technologies such as stock prediction, face recognition,
+language translation, and self-driving cars in the recent decades. After
+years of vigorous development, many segments of machine learning have
+grown up. Classification, which is the process of predicting the
+categories (class) of given data points based on a set of features
+(predictors), has been regarded as the most classical and representative
+subsection of machine learning. A lot of particular algorithms have been
+invented to perform the task of classification. Once people have a
+datapoint whose class and several features are given, it can be fed to
+the algorithms for exploring the patterns between the predictors and
+classes. Such data points are called training examples. Each trained
+algorithm could be regarded as a function \(f: X \rightarrow Y\), where
+\(X\) is the set of all possible values of the predictors and \(Y\)
+represents the collection of all categories. Every time the trained
+algorithm is given a new datapoint with a set of features
+\(\left(x_{1}, x_{2}, \ldots, x_{p}\right)\), it can generate a
+predicted category \(y=f\left(x_{1}, x_{2}, \ldots, x_{p}\right)\).
+Theoretically speaking, as more and more training examples are fed to
+the algorithms, the predicted class has a greater chance of being equal
+to the true class. These algorithms are playing a critical role in the
+fields of medical science and public health. One representative
+application is disease prediction.
+
+Inflammatory bowel disease (IBD), is a general term that describes a
+group of disorders that can cause prolonged chronic inflammation in
+human's digestive tract. IBD is usually classified into two types which
+are ulcerative colitis and Cohn's disease. Patients with either type of
+IBD have to suffer from symptoms including severe diarrhea, abdominal
+pain, fatigue, bloody stools and unintended weight loss \citep{CDC}
+(CDC, 2018). Approximately 1.5 million people have IBD in North America
+where the number is among the highest in the world \citep{CDC} (CDC,
+2020). Although IBD is not a rare disease, it is still incurable and
+more importantly its specific cause still remains unknown. However, it
+was recently mentioned by Genome-wide Association Studies (GWAS) that
+genetic susceptibility is playing a crucial role in the occurrence of
+IBD, which means genetic data can be potentially used to construct a
+biomarker for IBD, which is not only useful for exploring better
+treatments and customized patient care but also helpful for promoting
+the development of clinical trials involving new medications (SSC,
+2017). In addition, if an effective classifier can be constructed, we
+will be able to identify the population with high incidence risk of IBD
+so that some preventive actions such as lifestyle changes and
+medications can be implemented ahead. The earlier the patients treat
+them, the greater the chance they will live a longer and healthier life.
+Therefore, the work is worth doing.
+
+The objective of this paper contains two parts. First, we will assess
+and compare the performance of three types of classifiers including
+logistic regression with regularization, k-nearest neighbours, and
+decision tree. Second, based the performance result, we will train a
+model that can be used for classification of future observations.
+
+The comparison of the three methods and their methodology will be 
+discussed in the Model section. In Result section, we summarize the 
+performance of each method and make the final decision. Finally in
+the section 4, we discuss the limitations of this study and conclude 
+the relationship between gene and IBD. Appendix will contain the boxplots 
+that demonstrate the distributions of the performance of the methods 
+we referred in the result section.
+
+\hypertarget{methods}{%
+\section{Methods}\label{methods}}
+
+Our work will consist of four specific approaches supported by three
+classification models:
+
+\begin{table}[H]
+
+\caption{\label{tab:unnamed-chunk-1}\label{tab1}Summary of the machine learning methods}
+\centering
+\begin{tabular}[t]{l}
+\hline
+Methods\\
+\hline
+Logistic Model Regularized by LASSO (Least Absolute Shrinkage and Selection Operator)\\
+\hline
+Logistic Model Regularized by RR (Ridge Regression)\\
+\hline
+KNN (K Nearest Neighbours)\\
+\hline
+Classification Tree Regularized by Pruning\\
+\hline
+\end{tabular}
+\end{table}
+
+The methodology of each approach is one-by-one explained in details in
+the following sections.
+
+\hypertarget{logistic-regression-with-regularization}{%
+\section{Logistic Regression with
+Regularization}\label{logistic-regression-with-regularization}}
+
+As logistic regression is technically created to model categorical
+response variables, it has been the most commonly used and well-studied
+prediction method for classification . Let \(Y\) be the binary response
+variable which takes values of 0 (for health individual) and 1(for IBD
+patient), and \(X_{1}, X_{2}, \ldots, X_{p}\) be the predictors (age,
+ethnicity, sex , and the quantified probe set levels). Then the
+relationship between \(Y\) and \(X's\) is modelled by logistic
+regression as :
+
+\[
+\log \left(\frac{P\left(Y=1 \mid X_{1}, \ldots, X_{p}\right)}{1-P\left(Y=1 \mid X_{1}, \ldots, X_{p}\right)}\right)=w_{0}+w_{1} X_{1}+\ldots+w_{p} X_{p}
+\]
+
+It is shown in the equation that this model does not directly classify
+the response variable but instead it assigns each observation with a
+probability of belonging to a class, given the values of the predictors.
+This probability will act as a decision maker for classification. By
+assuming the response variable \(Y\) follows a Bernoulli distribution
+with parameter \(P(Y=1)\), we can derive the likelihood function of the
+weights \(w_{0}, w_{1}, \ldots, w_{p}\):
+
+\[
+L\left(w_{0}, \ldots, w_{p}\right)=\prod_{i=1}^{N}\left(\frac{\exp \left(w_{0}+w_{1} x_{i 1}+\ldots+w_{p} x_{i p}\right)}{1+\exp \left(w_{0}+w_{1} x_{i 1}+\ldots+w_{p} x_{i p}\right)}\right)^{y_{i}}\left(1-\frac{\exp \left(w_{0}+w_{1} x_{i 1}+\ldots+w_{p} x_{i p}\right)}{1+\exp \left(w_{0}+w_{1} x_{i 1}+\ldots+w_{p} x_{i p}\right)}\right)^{1-y_{i}}
+\]
+
+The training purpose is to find weight estimates
+\(\hat{w}_{0}, \hat{w}_{1}, \ldots, \hat{w}_{p}\) which can maximize the
+log likelihood function. Although there is no closed form solution of
+the estimates, many built-in functions in various programming languages
+can help us to solve them numerically given any training data. Once we
+obtain the estimates, we will be able to classify a new observation with
+known feature values into a category based on the predicted
+probabilities:
+
+\[
+\hat{P}\left(Y=1 \mid x_{1}, \ldots, x_{p}\right)=\frac{\exp \left(\hat{w}_{0}+\hat{w}_{1} x_{1}+\ldots+\hat{w}_{p} x_{p}\right)}{1+\exp \left(\hat{w}_{0}+\hat{w}_{1} x_{1}+\ldots+\hat{w}_{p} x_{p}\right)}
+\]
+
+\[
+\hat{P}\left(Y=0 \mid x_{1}, \ldots, x_{p}\right)=1-\frac{\exp \left(\hat{w}_{0}+\hat{w}_{1} x_{1}+\ldots+\hat{w}_{p} x_{p}\right)}{1+\exp \left(\hat{w}_{0}+\hat{w}_{1} x_{1}+\ldots+\hat{w}_{p} x_{p}\right)}
+\]
+
+If \(\hat{P}\left(Y=1 \mid x_{1}, \ldots, x_{p}\right)>0.5\), we will
+classify the new observation into the group of IBD patients
+(i.e.~\(\hat{Y}=1\)). Otherwise, we will classify it as a healthy
+individual.
+
+However, the presence of a large number of predictors can introduce
+noise in the model which can lead to undesirable overfitting and
+non-ideal prediction performance. In our data the number of predictors
+is 312 which is even two-times larger than the sample size (126),
+therefore the concern of overflexibility needs to be taken into
+consideration. One solution to this concern is regularization in which
+the size of \(\hat{w}_{0}, \hat{w}_{1}, \ldots, \hat{w}_{p}\) are shrunk
+by adding constraints or penalties in the process of maximizing the
+likelihood function. We will focus on two regularization methods: LASSO
+(Least Absolute Shrinkage and Selection Operator) and RR (Ridge
+Regression). Note that the training purpose of logistic model is to find
+weight estimates that maximize
+\(\log L\left(w_{0}, \ldots, w_{p}\right)\) or equivalently minimize
+\(-\log L\left(w_{0}, \ldots, w_{p}\right)\). Hence, the negative
+likelihood function could be considered as a loss function. In both RR
+and LASSO, an additional term, which is proportional to the weights'
+size, is added to the loss function
+\(-\log L\left(w_{0}, \ldots, w_{p}\right)\):
+
+\[
+R R:-\log \left(L\left(w_{0}, \ldots, w_{p}\right)\right)+\lambda \sum_{j=1}^{p} w_{j}^{2}
+\] \[
+L A S S O:-\log \left(L\left(w_{0}, \ldots, w_{p}\right)\right)+\lambda \sum_{j=1}^{p}\left|w_{j}\right|
+\]
+
+By using the updated loss functions, the loss value becomes proportional
+to the size of the weight estimates, which means larger weights will
+apply more penalty to the loss function. Thus the weights are controlled
+from being too large to cause overfitting. In both equations, the
+parameter \(\lambda\) is a positive number that controls the magnitude
+of the penalty. As \(\lambda\) increases, we will have larger penalty,
+smaller weight estimates, and less model flexibility. A smaller
+\(\lambda\) implies larger flexibility but smaller training bias. The
+choice of \(\lambda\) is important due to the bias-variance trade off.
+We will use cross validation to find the optimal \(\lambda\) value in
+the training process.
+
+Since the penalty terms added to the loss function are different for RR
+and LASSO, the two methods actually perform different forms of
+regularization. Ridge regression shrinks the weights but does not
+perform feature selection. However, LASSO works to select only a subset
+of predictors by forcing some of the weights to become 0. RR usually
+have better performance when most of the features are associated with
+the response while LASSO performs better when only some are strong
+predictors and the rest add noise. People often cannot know in advance
+which one is better, hence we will train two logistic models that are
+respectively regularized by RR and LASSO , and then compare their
+prediction capability.
+
+\hypertarget{k-nearest-neighbours}{%
+\section{K-Nearest Neighbours}\label{k-nearest-neighbours}}
+
+Although Logistic regression is a mature model for binary
+classification, it still needs several statistical assumptions like that
+the responses should identically and independently follow a Bernoulli
+distribution. K-Nearest Neighbours is a sort of Bayes classifier that is
+particularly designed to perform classification with no need of
+assumption. This non-parametric model estimates the conditional
+probabilities of belonging to a class by inspecting the classes of the
+neighbours.
+
+Since we started to talk about neighbours, it is necessary to introduce
+the concept of distance in the feature space before explaining the
+details of the algorithm. Given any two data points \(m_{1}\) and
+\(m_{2}\) in the feature space, they can be represented by two sets of
+predictor values:
+\(m_{1}=\left\{X_{1}=s_{1}, X_{2}=s_{2}, \ldots, X_{p}=s_{p}\right\} \& m_{2}=\left\{X_{1}=t_{1}, X_{2}=t_{2}, \ldots, X_{p}=t_{p}\right\}\)\\
+Then the distance between them is calculated using the Euclidean
+distance formula:
+
+\[
+d\left(m_{1}, m_{2}\right)=d\left(\left(s_{1}, s_{2}, \ldots, s_{p}\right),\left(t_{1}, t_{2}, \ldots, t_{p}\right)\right)=\sqrt{\sum_{i=1}^{p}\left(s_{i}-t_{i}\right)^{2}}
+\]
+
+Given any new observation with features
+\(\left\{X_{1}=x_{1}, X_{2}=x_{2}, \ldots, X_{p}=x_{p}\right\}\), we
+will classify its corresponding \(Y\) as 0 (absence of IBD) or 1
+(presence of IBD) based on a given training data set in the following
+way. First, we select \(K\) data points from the training set which are
+closet to the new observation in the feature space. We put these \(K\)
+nearest data points in a set denoted by \(T\). Then we estimate the
+conditional probability of each class using sample proportions in set
+\(T\):
+
+\[
+\hat{P}\left(Y=0 \mid x_{1}, \ldots, x_{p}\right)=\frac{1}{K} \sum_{i \in T} I\left(y_{i}=0\right) ; \hat{P}\left(Y=1 \mid x_{1}, \ldots, x_{p}\right)=\frac{1}{K} \sum_{i \in T} I\left(y_{i}=1\right)
+\]
+
+Then we will assign Y with the class that has the highest estimated
+conditional probability. This is called the majority vote rule. Although
+the mechanism of KNN is simple, it usually does pretty well in utilizing
+patterns and associations in the data. One critical point is how to
+choose the optimal value of \(K\) since \(K\) determines the
+bias-variance trade-off of the model. Small values of \(K\) may lead to
+overfitting while large values of \(K\) may cause undesirable bias.
+Hence finding an optimal \(K\) is the major training purpose in KNN. We
+will obtain the optimal value of \(K\) using a resampling method called
+leave-one-out which is actually one-fold cross validation.
+
+\hypertarget{decision-tree}{%
+\section{Decision Tree}\label{decision-tree}}
+
+The last predictive model we will take into consideration is decision
+trees in which the feature space is split in a recursive way using one
+feature at a time. The approach's name comes from the segmentation of
+the feature space which can be summarized and visualized by a tree-like
+structure.
+
+Once the model is fed with a set of observations, the data will be
+partitioned in an iterative way using one predictor at a time. First,
+the algorithm will decide one feature to be used for data partition. If
+the chosen feature is categorical, the data will be simply split based
+on the levels of the feature. If the chosen predictor is continuous, the
+algorithm will determine a numeric threshold first and then partition
+the data based on the threshold. After the initial partitioning
+isfinished, each one of the two subdivided sets of data can be further
+partitioned. This will be implemented again after selecting features and
+thresholds for each one of the partitions. Therefore the resulted model
+can have a tree-like structure. Each split in the tree is called a node,
+and the terminal nodes are referred as leaves. Each leaf of the tree is
+finally assigned with the class that has the highest proportion in that
+node.
+
+The criterion used by the algorithm to choose feature and threshold at
+each time is called purity. This term describes how homogeneous the
+subdivided data regions are in terms of having data from the same class
+as much as possible. If we let \(m\) be a node with \(K\) split regions,
+then the purity of node can be quantified through two mathematical
+functions:
+
+\[
+\text { 1. Gini Index: } G=\sum_{k=1}^{K} \hat{p}_{m k}\left(1-\hat{p}_{m k}\right)
+\]
+
+\[
+\text { 2. Cross-entropy: } D=-\sum_{k=1}^{K} \hat{p}_{m k} \log \left(\hat{p}_{m k}\right)
+\]
+
+In the above equations, \(\hat{p}_{mk}\) stands for the proportion of
+data points with level \(k\). Both of these measures take values close
+to 0 if \(\hat{p}_{mk}\) is either close to 0 or close to 1 which
+represents a low level of homogeneity. The training objective is to
+ensure the data regions created at each node to be homogeneous as much
+as possible. The splitting will stop if no further split can improve the
+purity.
+
+Once we have a trained tree model and a new observation with known
+feature values, the algorithm can take it down the tree and ends in one
+of the leaves. The estimated class of the new data point will be the
+class that has been assigned to the leaf where it ends at.
+
+According to the mechanism introduced above, the complexity of a tree
+model can be significantly related to the number of features. Hence the
+large number of predictors in our case can lead to an over-complicated
+model which can cause overfitting as well as non-ideal running time.
+Therefore, once the tree is trained, we will prune it by eliminating
+some of the terminal branches. Suppose \(T\) is a tree model, we can
+calculate its corresponding loss value using the following loss function
+\(LOSS(T)=N_{m}+\alpha|T|\): , where \(N_m\) represents the number of
+misclassifications, \(|T|\) represents the number of leaves, and
+\(\alpha\) is a complexity parameter that decides the magnitude of
+penalty. Let \(T_{full}\) represent the fully developed tree and
+\(S=\left\{T \subset T_{f u l l}\right\}\) be the set of all pruned
+subtrees of \(T_{full}\). Then the chosen \(T_c\) should be the element
+in \(S\) that gives the minimum \(LOSS(T)\). The working principle of
+pruning is similar to the regularization of logistic model, thus it is
+also necessary to find an optimal value of \(\alpha\) which can balance
+between bias and variance. The optimal will be obtained using cross
+validation like before.
+
+\hypertarget{validation-method}{%
+\section{Validation Method}\label{validation-method}}
+
+We will assess and compare the performance of these classification
+methods using split set approach. Each time we will randomly select 2/3
+of the observations for training and use the rest 1/3 for validating.
+Since there is randomness involved, we will respectively repeat the
+process ten times for each model and record the performance in each
+epoch. Finally we will compare the average performance for each model
+over the ten epochs. There are multiple measures that can be used to
+evaluate the classification performance. Our criterions will be the
+following four quantities that can be derived from a confusion matrix:
+
+\begin{table}[H]
+
+\caption{\label{tab:unnamed-chunk-2}Criterions}
+\centering
+\begin{tabular}[t]{l}
+\hline
+Criterions\\
+\hline
+Sensitivity $=\frac{TP}{TP+FN}$\\
+\addlinespace
+Specificity $=\frac{TN}{TN+FP}$\\
+\addlinespace
+Accuracy $=\frac{TP+TN}{TP+TN+FP+FN}$\\
+\addlinespace
+F1 Score $=\frac{2TP}{2TP+FP+FN}$\\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+
+\caption{\label{tab:unnamed-chunk-3}Confusion Matrix}
+\centering
+\begin{tabular}[t]{lcc}
+\toprule
+  & IBD & Non.IBD\\
+\midrule
+Predicted IBD $(\hat{Y}=1)$ & TP & FP\\
+Predicted Non-IBD $(\hat{Y}=0)$ & FN & TN\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Since different measures have different practical meanings and good
+performance on one measure does not imply good performance on the other
+measures, we will assess and compare the classifiers' performance using
+all of the four evaluation scores. The different application scenarios
+of these four scores will be further discussed in the conclusion.
+
+\hypertarget{results}{%
+\section{Results}\label{results}}
+
+After we repeatedly tested each model ten times using split set
+approach, their average test sensitivity is summarized in the following
+table:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{l|l|l|l|l}
+\hline
+Model & Sensitivity & Specificity & Accuracy & F1 Score\\
+\hline
+Ridge Regression & 0.617 & 0.969 & 0.836 & 0.57\\
+\hline
+LASSO & 0.877 & 0.931 & 0.907 & 0.771\\
+\hline
+KNN & 0.924 & 0.872 & 0.883 & 0.718\\
+\hline
+Tree & 0.664 & 0.787 & 0.757 & 0.451\\
+\hline
+\end{tabular}
+\end{table}
+
+The first thing to note is that each method is playing a role since all
+the scores are greater than 0.5. Then it can be seen from the table that
+logistic model with RR is the top performer on specificity, logistic
+model with LASSO shows the best performance on both accuracy and F1
+score, and KNN gets the highest score on sensitivity. Also, it is worth
+noting that decision tree has the poorest overall performance. The
+tree's score is always at the bottom except for specificity. The
+following box plots in appendix further demonstrate the distributions of
+the performance of the proposed methods among the 10 epochs for each
+prediction score.
+
+\begin{center}\includegraphics[width=0.7\linewidth]{hw_files/figure-latex/unnamed-chunk-6-1} \end{center}
+
+It is indicated from the box plots that the top performer of each
+measure also owns the most consistent distribution. For sensitivity, the
+performance of KNN is the best as well as the most consistent among all
+the methods. The median performance of KNN on sensitivity is 1, which
+means that KNN produced perfect validation sensitivities half of the
+time. For specificity, RR is the best performer with the most consistent
+performance. Only two of the ten validation specificities of RR were
+less than one. With respect to accuracy and F1 score, LASSO's
+performance is the best and most consistent. Since the logistic model
+with LASSO has been the winner on two of the four evaluation measures
+and it has no obvious shortfalls on the other measures, we claim the
+winner is logistic regression with LASSO regularization. Finally, we
+trained a logistic model with LASSO regularization using the whole data
+set as the ultimate classifier for future IBD classification.
+
+\hypertarget{conclusion-discussion}{%
+\section{Conclusion \& Discussion}\label{conclusion-discussion}}
+
+We assessed and compared four classification models including logistic
+regression with RR regularization, logistic regression with LASSO
+regularization, K-nearest neighbours, and decision tree based on an IBD
+diagnosis data set found on the SSC website. The classification
+performance was respectively evaluated using four measures including
+sensitivity, specificity, accuracy, and F1 score. The validation results
+show that every classification model is instrumental, which mediately
+confirms the relationship between gene and IBD. Besides that the tree
+showed the poorest overall performance, the other methods all have their
+own merits and demerits with respect to each measure. Finally, we
+decided to train a logistic model with LASSO regularization using the
+whole data set as the final classifier because it was the top performer
+on both accuracy and F1 score without showing shortage on the rest of
+the measures. Using this model, we will be capable of doing IBD
+diagnosis or providing an estimated chance of getting IBD for future
+observations.
+
+There are some non-negligible limitations existing in our study. First,
+the sample size is insufficient. In our case, although we have more than
+one thousand predictors, the number of observations is only 126. As a
+consequence, we do not have enough training data to tune each classifier
+as effective as possible. Also, the small size of training data can
+limit the performance of some models. For example, the tree model
+becomes very complex when the number of features is too large due to its
+mechanism. Therefore, the advantage of tree cannot be shown without
+excessive training. This is why the tree model had the poorest
+validation result. Second, the criterion of a good IBD classifier can
+vary from situation to situation. For example, if we know that a false
+negative costs much more than a false positive, we are supposed to use
+the model whose sensitivity score is the highest. In that case we will
+prefer KNN rather than logistic regression according to the validation
+results.
+
+\hypertarget{r-reference}{%
+\section{R reference}\label{r-reference}}
+
+Wickham H, Bryan J (2022). \emph{readxl: Read Excel Files}. R package
+version 1.4.0, \url{https://CRAN.R-project.org/package=readxl}.
+
+Friedman J, Hastie T, Tibshirani R (2010). ``Regularization Paths for
+Generalized Linear Models via Coordinate Descent.'' \emph{Journal of
+Statistical Software}, \emph{33}(1), 1-22. doi:10.18637/jss.v033.i01
+\url{https://doi.org/10.18637/jss.v033.i01},
+\url{https://www.jstatsoft.org/v33/i01/}.
+
+Robin X, Turck N, Hainard A, Tiberti N, Lisacek F, Sanchez J, Müller M
+(2011). ``pROC: an open-source package for R and S+ to analyze and
+compare ROC curves.'' \emph{BMC Bioinformatics}, \emph{12}, 77.
+
+Kuhn M (2022). \emph{caret: Classification and Regression Training}. R
+package version 6.0-92, \url{https://CRAN.R-project.org/package=caret}.
+
+Venables WN, Ripley BD (2002). \emph{Modern Applied Statistics with S},
+Fourth edition. Springer, New York. ISBN 0-387-95457-0,
+\url{https://www.stats.ox.ac.uk/pub/MASS4/}.
+
+Stevenson M, Nunes ESwcfT, Heuer C, Marshall J, Sanchez J, Thornton R,
+Reiczigel J, Robison-Cox J, Sebastiani P, Solymos P, Yoshida K, Jones G,
+Pirikahu S, Firestone S, Kyle R, Popp J, Jay M, Reynard C, Cheung A,
+Singanallur N, Szabo A, Rabiee. A (2022). \emph{epiR: Tools for the
+Analysis of Epidemiological Data}. R package version 2.0.46,
+\url{https://CRAN.R-project.org/package=epiR}.
+
+Ripley B (2021). \emph{tree: Classification and Regression Trees}. R
+package version 1.0-41, \url{https://CRAN.R-project.org/package=tree}.
+
+Therneau T, Atkinson B (2022). \emph{rpart: Recursive Partitioning and
+Regression Trees}. R package version 4.1.16,
+\url{https://CRAN.R-project.org/package=rpart}.
+
+\bibliography{mybibfile.bib}
+
+
+\end{document}
